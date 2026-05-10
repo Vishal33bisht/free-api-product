@@ -1,20 +1,16 @@
-const API_URL = "https://api.freeapi.app/api/v1/public/randomproducts";
+const API_URL = "https://api.freeapi.app/api/v1/public/randomusers";
 
-const productGrid = document.querySelector("#productGrid");
+const userGrid = document.querySelector("#userGrid");
 const statusPanel = document.querySelector("#statusPanel");
 const summary = document.querySelector("#summary");
-const refreshButton = document.querySelector("#refreshButton");
-const itemCount = document.querySelector("#itemCount");
-const categoryCount = document.querySelector("#categoryCount");
-const averageRating = document.querySelector("#averageRating");
+const loadMoreButton = document.querySelector("#loadMoreButton");
+const userCount = document.querySelector("#userCount");
+const nationalityCount = document.querySelector("#nationalityCount");
+const genderCount = document.querySelector("#genderCount");
 
-const formatPrice = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+let allUsers = [];
 
-function getProducts(payload) {
+function getUsers(payload) {
   if (Array.isArray(payload?.data?.data)) {
     return payload.data.data;
   }
@@ -35,53 +31,93 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function productTemplate(product) {
-  const title = escapeHtml(product.title || "Untitled product");
-  const brand = escapeHtml(product.brand || "Unknown brand");
-  const category = escapeHtml(product.category || "General");
-  const description = escapeHtml(
-    product.description || "No description available for this product."
-  );
-  const image = escapeHtml(product.thumbnail || product.images?.[0] || "");
-  const price = Number(product.price || 0);
-  const rating = Number(product.rating || 0).toFixed(1);
-  const stock = Number(product.stock || 0);
-  const discount = Number(product.discountPercentage || 0).toFixed(0);
+function userTemplate(user) {
+  const title = escapeHtml(user.name?.title || "");
+  const firstName = escapeHtml(user.name?.first || "User");
+  const lastName = escapeHtml(user.name?.last || "");
+  const username = escapeHtml(user.login?.username || "");
+  const email = escapeHtml(user.email || "");
+  const phone = escapeHtml(user.phone || "");
+  const cell = escapeHtml(user.cell || "");
+  const gender = escapeHtml(user.gender || "");
+  const age = user.dob?.age || "N/A";
+  const city = escapeHtml(user.location?.city || "");
+  const country = escapeHtml(user.location?.country || "");
+  const nationality = escapeHtml(user.nat || "");
+  const image = escapeHtml(user.picture?.large || "");
+
+  const genderBadge =
+    gender.toLowerCase() === "male"
+      ? "♂️ Male"
+      : gender.toLowerCase() === "female"
+        ? "♀️ Female"
+        : "Gender";
+
+  const emailLink =
+    email && email !== ""
+      ? `<a href="mailto:${email}" class="contact-link">📧 Email</a>`
+      : "";
+
+  const phoneLink =
+    phone && phone !== ""
+      ? `<a href="tel:${phone}" class="contact-link">📞 Phone</a>`
+      : "";
+
+  const cellLink =
+    cell && cell !== ""
+      ? `<a href="tel:${cell}" class="contact-link">📱 Cell</a>`
+      : "";
 
   return `
-    <article class="product-card">
-      <div class="product-media">
-        <img src="${image}" alt="${title}" loading="lazy" />
+    <article class="user-card">
+      <div class="user-header">
+        <img src="${image}" alt="${firstName} ${lastName}" class="user-avatar" loading="lazy" />
+        <span class="gender-badge">${genderBadge}</span>
       </div>
-      <div class="product-body">
-        <div class="product-meta">
-          <span class="pill">${brand}</span>
-          <span class="pill">${category}</span>
+      <div class="user-body">
+        <h2 class="user-name">${title} ${firstName} ${lastName}</h2>
+        <p class="user-username">@${username}</p>
+        
+        <div class="user-info">
+          <div class="info-row">
+            <span class="info-label">🎂 Age:</span>
+            <span class="info-value">${age} years</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">📍 Location:</span>
+            <span class="info-value">${city}, ${country}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">🌍 Nationality:</span>
+            <span class="info-value">${nationality}</span>
+          </div>
         </div>
-        <h2 class="product-title">${title}</h2>
-        <p class="product-description">${description}</p>
-        <div class="stock">${stock} in stock · ${discount}% off</div>
-        <div class="product-footer">
-          <span class="price">${formatPrice.format(price)}</span>
-          <span class="rating" aria-label="Rating ${rating} out of 5">★ ${rating}</span>
+
+        <div class="user-footer">
+          <div class="contact-info">
+            ${emailLink}
+            ${phoneLink}
+            ${cellLink}
+          </div>
         </div>
       </div>
     </article>
   `;
 }
 
-function updateSummary(products) {
-  const categories = new Set(products.map((product) => product.category).filter(Boolean));
-  const ratingTotal = products.reduce(
-    (total, product) => total + Number(product.rating || 0),
-    0
+function updateSummary() {
+  const nationalities = new Set(
+    allUsers.map((user) => user.nat).filter(Boolean)
   );
+  const genders = allUsers.reduce((acc, user) => {
+    const gender = user.gender || "unknown";
+    acc[gender] = (acc[gender] || 0) + 1;
+    return acc;
+  }, {});
 
-  itemCount.textContent = products.length;
-  categoryCount.textContent = categories.size;
-  averageRating.textContent = products.length
-    ? (ratingTotal / products.length).toFixed(1)
-    : "0.0";
+  userCount.textContent = allUsers.length;
+  nationalityCount.textContent = nationalities.size;
+  genderCount.textContent = Object.keys(genders).length;
   summary.hidden = false;
 }
 
@@ -91,11 +127,9 @@ function showStatus(message, isError = false) {
   statusPanel.classList.toggle("error", isError);
 }
 
-async function loadProducts() {
-  refreshButton.disabled = true;
-  productGrid.innerHTML = "";
-  summary.hidden = true;
-  showStatus("Loading products...");
+async function loadMoreUsers() {
+  loadMoreButton.disabled = true;
+  showStatus("Loading users...");
 
   try {
     const response = await fetch(API_URL);
@@ -105,26 +139,27 @@ async function loadProducts() {
     }
 
     const payload = await response.json();
-    const products = getProducts(payload);
+    const users = getUsers(payload);
 
-    if (!products.length) {
-      showStatus("No products were returned by the API.");
+    if (!users.length) {
+      showStatus("No users were returned by the API.");
       return;
     }
 
-    updateSummary(products);
+    allUsers = [...allUsers, ...users];
+    updateSummary();
     statusPanel.hidden = true;
-    productGrid.innerHTML = products.map(productTemplate).join("");
+    userGrid.innerHTML = allUsers.map(userTemplate).join("");
   } catch (error) {
     showStatus(
-      "Unable to load products right now. Please try again in a moment.",
+      "Unable to load users right now. Please try again in a moment.",
       true
     );
     console.error(error);
   } finally {
-    refreshButton.disabled = false;
+    loadMoreButton.disabled = false;
   }
 }
 
-refreshButton.addEventListener("click", loadProducts);
-loadProducts();
+loadMoreButton.addEventListener("click", loadMoreUsers);
+loadMoreUsers();
