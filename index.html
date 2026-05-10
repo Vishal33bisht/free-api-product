@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Product Listing</title>
+    <title>Random Users UI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,40 +16,40 @@
     <main class="shell">
       <section class="topbar" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Products API</p>
-          <h1 id="page-title">Product Listing</h1>
+          <p class="eyebrow">Random Users API</p>
+          <h1 id="page-title">User Profiles</h1>
           <p class="subtitle">
-            Browse live product data from the FreeAPI random products endpoint.
+            Explore live user profiles from the FreeAPI random users endpoint.
           </p>
         </div>
-        <button id="refreshButton" class="refresh-button" type="button">
-          Refresh
+        <button id="loadMoreButton" class="refresh-button" type="button">
+          Load More Users
         </button>
       </section>
 
       <section class="status-panel" id="statusPanel" aria-live="polite">
-        Loading products...
+        Loading users...
       </section>
 
       <section class="summary" id="summary" hidden>
         <div>
-          <span id="itemCount">0</span>
-          <small>Products</small>
+          <span id="userCount">0</span>
+          <small>Users Loaded</small>
         </div>
         <div>
-          <span id="categoryCount">0</span>
-          <small>Categories</small>
+          <span id="nationalityCount">0</span>
+          <small>Nationalities</small>
         </div>
         <div>
-          <span id="averageRating">0.0</span>
-          <small>Average rating</small>
+          <span id="genderCount">0</span>
+          <small>Genders</small>
         </div>
       </section>
 
       <section
-        class="product-grid"
-        id="productGrid"
-        aria-label="Product results"
+        class="user-grid"
+        id="userGrid"
+        aria-label="User profiles"
       ></section>
     </main>
 
